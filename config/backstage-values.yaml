@@ -32,18 +32,28 @@ backstage:
   # external-access method with a fixed token; the smoke passes
   # `Authorization: Bearer <token>` to satisfy the check.
   #
-  # v0.1 attempted this and the install wait timed out — at the
-  # time we assumed the override was breaking backend startup,
-  # but the install_wrapper had no diagnostic dump so we couldn't
-  # see pod logs. v0.2's install_wrapper dumps `kubectl describe
-  # deploy/backstage` + `kubectl logs deploy/backstage` on wait
-  # timeout, and `wait_timeout` is bumped to 900s in defs.bzl —
-  # Backstage's startup with auth enabled may legitimately take
-  # longer than 600s on a clean runner (image pull + init +
-  # config validation + DB migrations + plugin loading).
+  # CRITICAL — `args` override below: the chart's deployment
+  # template, when `appConfig:` is set, emits args like
+  # `["--config", "/app/app-config-from-configmap.yaml"]` and
+  # nothing else. The demo image's `node packages/backend` command
+  # then loads ONLY our partial override and crashes at startup
+  # with "Missing required config value at 'backend.baseUrl' in
+  # 'env'" — because our override only sets `backend.auth`, the
+  # demo image's own baked-in `app-config.yaml` (with baseUrl,
+  # listen port, etc.) is never read. Setting `backstage.args`
+  # forces the chart to ALSO pass `--config app-config.yaml`
+  # (the relative path Backstage's config loader resolves
+  # against $CWD = /app, picking up the demo image's bundled
+  # config). Final container args become
+  # `[--config, app-config.yaml, --config, /app/app-config-from-configmap.yaml]`
+  # and the configs merge per Backstage's left-to-right precedence.
   #
-  # Production consumers replace this hardcoded token with a
-  # Secret-mounted value referenced via `extraEnvVarsSecrets`.
+  # Production consumers building their own Backstage image bake
+  # auth + baseUrl etc. directly into their `app-config.yaml`,
+  # eliminating the appConfig override + this args dance entirely.
+  args:
+    - "--config"
+    - "app-config.yaml"
   appConfig:
     backend:
       auth:

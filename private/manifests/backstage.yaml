@@ -164,6 +164,8 @@ spec:
             - packages/backend
           args:
             - "--config"
+            - "app-config.yaml"
+            - "--config"
             - "/app/app-config-from-configmap.yaml"
           readinessProbe:
             httpGet:

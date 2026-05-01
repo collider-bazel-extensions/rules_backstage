@@ -26,6 +26,21 @@ backstage:
     tag: latest
     pullPolicy: IfNotPresent
 
+  # Disable backend service-to-service auth for the smoke. Backstage
+  # 1.24+ requires authenticated access to backend APIs by default
+  # (signed JWT or a configured external-access method) — anonymous
+  # requests get HTTP 401 "Missing credentials." A real consumer
+  # config either lists `backend.auth.externalAccess[]` methods OR
+  # bakes a static service token into the curl client. For v0.1's
+  # smoke (anonymous curl pod GETing /api/catalog/entities), the
+  # simplest workable shape is to flip the explicit "I know what I'm
+  # doing, don't enforce" flag. Production consumers MUST NOT use
+  # this — README spells out the warning.
+  appConfig:
+    backend:
+      auth:
+        dangerouslyDisableDefaultAuthPolicy: true
+
 # ---- database ---------------------------------------------------------------
 # Enable the chart-bundled PostgreSQL subchart. The chart's auth-
 # section auto-generates credentials and wires them into Backstage

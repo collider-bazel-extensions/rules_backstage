@@ -3,10 +3,12 @@
 - Analysis test verifies the macro instantiates cleanly.
 - Smoke composition: kind cluster + Backstage (single Deployment +
   chart-bundled PostgreSQL StatefulSet). Smoke `kubectl run`s a
-  curl pod, GETs `<svc>:7007/api/catalog/entities` through Backstage's
-  HTTP API, asserts HTTP 200 + a JSON-array response shape — proves
-  the Backstage backend + Postgres connection + catalog plugin all
-  initialized and the read path works end-to-end.
+  curl pod, POSTs a Location to /api/catalog/locations pointing at
+  tests/fixtures/smoke-component.yaml (Backstage fetches via its
+  `url` reader), then polls /api/catalog/entities until the entity
+  shows up. Both calls carry static-token Bearer auth. Proves
+  Backstage backend + Postgres + catalog plugin write+read paths +
+  service-to-service auth end-to-end.
 """
 
 load("@rules_backstage//:defs.bzl", "backstage_health_check", "backstage_install")

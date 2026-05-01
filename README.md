@@ -38,6 +38,15 @@ as `@rules_backstage//config:backstage-values.yaml` for inspection
 > a Secret-mounted env var (`extraEnvVarsSecrets`) and ${VAR}
 > substitution in their app-config.
 
+> **Smoke shape (v0.2).** The smoke POSTs a Location pointing at
+> [`tests/fixtures/smoke-component.yaml`](tests/fixtures/smoke-component.yaml)
+> via `/api/catalog/locations`, then polls `/api/catalog/entities`
+> for the round-tripped Component. Backstage fetches the fixture
+> from `raw.githubusercontent.com` server-side (same network shape
+> as `rules_argocd`'s example-apps fetch). v0.1's smoke only hit
+> `/.backstage/health/v1/readiness`, which didn't exercise auth or
+> the catalog plugin.
+
 **Supported platforms (v0.2):** any platform where rules_kubectl
 runs. Validated on Linux x86\_64 in CI.
 
@@ -174,6 +183,7 @@ Drops into `itest_service.health_check`. Same wait shape with
 | Target cluster | Out of scope. | |
 | Backstage container image | Pulled at runtime. `docker.io/backstage/backstage:latest` (overridable). | Future: pre-load via `kind_cluster.images`. |
 | PostgreSQL container image | Pulled at runtime. `docker.io/bitnamilegacy/postgresql:15.4.0-debian-11-r10`. | Chart's image override already applied. |
+| Smoke fixture URL | Fetched at smoke time. `raw.githubusercontent.com/.../tests/fixtures/smoke-component.yaml`. | Backstage's `url` reader fetches it server-side; same shape as `rules_argocd`. |
 
 ---
 

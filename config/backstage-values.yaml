@@ -62,6 +62,22 @@ backstage:
             options:
               token: smoke-fixture-token-do-not-use-in-prod-12345
               subject: smoke-svc
+    # The demo image's bundled `app-config.yaml` registers
+    # `file:/examples/{entities,template/template,org}.yaml`
+    # locations. THOSE FILES ARE NOT SHIPPED IN THE PUBLISHED
+    # `backstage/backstage:latest` image — the catalog plugin loops
+    # forever logging "file /examples/entities.yaml does not exist"
+    # and the catalog stays empty. Backstage merges array config
+    # values by REPLACING (not concatenating) — setting an explicit
+    # list here clobbers the demo image's broken defaults.
+    #
+    # Empty list is fine; the smoke test POSTs its own Location at
+    # runtime via /api/catalog/locations (exercises the documented
+    # write path) and then GETs /api/catalog/entities to read it
+    # back. Production consumers populate this list with their own
+    # `url` / `github` / `file` locations.
+    catalog:
+      locations: []
 
 # ---- database ---------------------------------------------------------------
 # Enable the chart-bundled PostgreSQL subchart. The chart's auth-

@@ -1,0 +1,23 @@
+# Synthetic Backstage entity used by the rules_backstage smoke test.
+#
+# At smoke time the test POSTs a Location of type `url` pointing at
+# this file's raw.githubusercontent.com URL. Backstage's `url` reader
+# fetches it server-side, the catalog plugin parses + ingests the
+# entity into Postgres, and the smoke then GETs /api/catalog/entities
+# and asserts this Component is present.
+#
+# Everything Backstage's `catalog-model` requires for a v1alpha1
+# Component is here. `spec.owner` accepts a free-form string when no
+# matching User/Group entity is present (Backstage emits a soft
+# warning but the entity is still ingested).
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: rules-backstage-smoke
+  description: Synthetic Component used to round-trip through Backstage's catalog API.
+  annotations:
+    backstage.io/managed-by-location: rules_backstage smoke test
+spec:
+  type: service
+  lifecycle: production
+  owner: rules-backstage-smoke-team

@@ -1,0 +1,55 @@
+# Example Backstage catalog entity. In practice each entity lives
+# in a YAML file at the root of a service's git repo (conventionally
+# named `catalog-info.yaml`); Backstage pulls it via a `Location`
+# entry in `app-config.yaml`'s `catalog.locations`.
+#
+# Three of the most common entity kinds: Component, API, Resource.
+# See https://backstage.io/docs/features/software-catalog/descriptor-format
+# for the full schema.
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: order-api
+  description: REST API for placing and tracking orders
+  annotations:
+    github.com/project-slug: example-org/order-api
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - go
+    - api
+    - tier-1
+spec:
+  type: service
+  lifecycle: production
+  owner: team-orders
+  system: e-commerce
+  providesApis:
+    - order-api-v1
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: order-api-v1
+  description: Order API — REST + JSON
+spec:
+  type: openapi
+  lifecycle: production
+  owner: team-orders
+  system: e-commerce
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: Order API
+      version: 1.0.0
+    paths: {}
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: orders-postgres
+  description: PostgreSQL cluster backing the order-api
+spec:
+  type: database
+  owner: team-orders
+  system: e-commerce

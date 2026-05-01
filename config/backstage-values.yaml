@@ -1,0 +1,79 @@
+# Render-time values for rules_backstage's pinned manifest.
+#
+# Smoke-fixture footprint: single Backstage Deployment + a single
+# PostgreSQL StatefulSet (chart-bundled subchart). Default Backstage
+# image (`backstage/backstage:latest` — the upstream demo build,
+# which carries the example catalog locations baked into its
+# `app-config.yaml`).
+#
+# Production deployments override every replica / image / database /
+# auth field. The smoke-fixture render is NOT a production starting
+# point.
+
+# ---- topology ---------------------------------------------------------------
+backstage:
+  replicas: 1
+
+  # Backstage's official "demo" image. Tagged `latest` because the
+  # chart's default tag is also `latest` — pinning a specific tag
+  # would mean re-rendering on every Backstage release. Production
+  # consumers should override `image.tag` to a specific digest /
+  # version + their own custom-built Backstage image (with their
+  # own plugins, app-config, theming, etc.). The demo image carries
+  # the example entities the smoke asserts against.
+  image:
+    repository: backstage/backstage
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# ---- database ---------------------------------------------------------------
+# Enable the chart-bundled PostgreSQL subchart. The chart's auth-
+# section auto-generates credentials and wires them into Backstage
+# via the appConfig template. v0.1 uses the bundled subchart for
+# zero-touch setup; production deployments often pivot to an
+# external Postgres (cloud-managed, or rules_cloudnativepg-managed).
+postgresql:
+  enabled: true
+  auth:
+    # `postgres` superuser password. The chart auto-generates one if
+    # we leave it empty, but explicit makes the auth wiring legible.
+    postgresPassword: smoke-fixture-postgres
+    username: backstage
+    password: smoke-fixture-backstage
+    database: backstage
+  # Single replica, no PVC. emptyDir for the database — fine for a
+  # smoke fixture that doesn't survive pod restart.
+  primary:
+    persistence:
+      enabled: false
+  # The chart's `small` resourcesPreset reserves ephemeral-storage +
+  # 256Mi memory for the Postgres pod. Same lesson as rules_kafka —
+  # kind's tight ephemeral-storage allocatable can fail to schedule
+  # the pod. `none` removes the resource block entirely.
+  primary:
+    persistence:
+      enabled: false
+    resourcesPreset: "none"
+
+# ---- service ----------------------------------------------------------------
+# ClusterIP is the chart default; explicit for clarity. Smoke pods
+# resolve `backstage.backstage.svc.cluster.local:7007` via cluster
+# DNS.
+service:
+  type: ClusterIP
+
+# ---- chart smoke-fixture niceties -------------------------------------------
+# ServiceAccount auto-mounting is on by default; smoke doesn't need
+# the SA token but turning it off would require an explicit
+# `automountServiceAccountToken: false` annotation we don't bother
+# with.
+
+ingress:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+metrics:
+  serviceMonitor:
+    enabled: false

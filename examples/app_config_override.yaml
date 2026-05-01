@@ -1,0 +1,68 @@
+# Example `backstage.appConfig` override. Apply by passing this file
+# as values to the chart re-render OR rebuild rules_backstage's
+# manifest with this overlay. Demonstrates the most common
+# customizations consumers add on top of the chart defaults:
+#
+#   - Custom branding via `app.title` / `app.baseUrl`.
+#   - Static catalog locations (alternative to GitHub-hosted YAMLs).
+#   - Auth provider config (here: GitHub OAuth — credentials live
+#     in a Secret, not in this YAML).
+#   - Catalog ingestion rules (which entity kinds are allowed).
+#
+# Sketch only — not exercised by v0.1's smoke. Production consumers
+# usually combine this with a custom-built Backstage image
+# (`backstage.image.repository: my-registry/my-backstage`).
+backstage:
+  appConfig:
+    app:
+      title: Acme Developer Portal
+      baseUrl: https://backstage.acme.example
+    organization:
+      name: Acme
+    backend:
+      baseUrl: https://backstage.acme.example
+      listen:
+        port: 7007
+      cors:
+        origin: https://backstage.acme.example
+      database:
+        # `pg` (PostgreSQL) is the chart's default backend; with
+        # `postgresql.enabled: true` (rules_backstage's default),
+        # the chart auto-wires `connection`. Override here only
+        # when pointing at an external DB.
+        client: pg
+    integrations:
+      github:
+        - host: github.com
+          token: ${GITHUB_TOKEN}
+    auth:
+      environment: production
+      providers:
+        github:
+          production:
+            clientId: ${AUTH_GITHUB_CLIENT_ID}
+            clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+    catalog:
+      rules:
+        - allow: [Component, API, Resource, System, Domain, User, Group]
+      locations:
+        # Self-bootstrap: a Backstage repo pointing at its own
+        # `catalog-info.yaml` plus a few well-known curated lists.
+        - type: url
+          target: https://github.com/acme/backstage-catalog/blob/main/catalog-info.yaml
+          rules:
+            - allow: [Component, API, Resource, System, Domain]
+        - type: url
+          target: https://github.com/acme/teams-catalog/blob/main/teams.yaml
+          rules:
+            - allow: [User, Group]
+  extraEnvVars:
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef: {name: backstage-secrets, key: github-token}
+    - name: AUTH_GITHUB_CLIENT_ID
+      valueFrom:
+        secretKeyRef: {name: backstage-secrets, key: gh-client-id}
+    - name: AUTH_GITHUB_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef: {name: backstage-secrets, key: gh-client-secret}

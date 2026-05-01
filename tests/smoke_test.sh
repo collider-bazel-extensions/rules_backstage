@@ -32,6 +32,11 @@ KCTL=("$KUBECTL" --kubeconfig="$KUBECONFIG")
 
 NS="smoke"
 BACKSTAGE_HOST="backstage.backstage.svc.cluster.local"
+# Bearer token wired in via `appConfig.backend.auth.externalAccess`
+# (config/backstage-values.yaml). Backstage 1.24+ enforces
+# service-to-service auth on backend APIs; the curl pod attaches
+# this token to satisfy the check.
+SMOKE_TOKEN="smoke-fixture-token-do-not-use-in-prod-12345"
 
 echo "smoke_test: launching curl pod"
 "${KCTL[@]}" create namespace "$NS" --dry-run=client -o yaml | "${KCTL[@]}" apply -f - >/dev/null
@@ -50,6 +55,7 @@ got_data=""
 while (( $(date +%s) < deadline )); do
   resp=$("${KCTL[@]}" -n "$NS" exec backstage-curl -- \
       curl -s -w "\nHTTP %{http_code}\n" \
+      -H "Authorization: Bearer ${SMOKE_TOKEN}" \
       "http://${BACKSTAGE_HOST}:7007/api/catalog/entities" 2>/dev/null || true)
   # Successful + non-empty: 200 with a JSON array containing at least
   # one object (ie. body starts with `[{`). An empty catalog returns

@@ -26,20 +26,32 @@ backstage:
     tag: latest
     pullPolicy: IfNotPresent
 
-  # Disable backend service-to-service auth for the smoke. Backstage
-  # 1.24+ requires authenticated access to backend APIs by default
-  # (signed JWT or a configured external-access method) — anonymous
-  # requests get HTTP 401 "Missing credentials." A real consumer
-  # config either lists `backend.auth.externalAccess[]` methods OR
-  # bakes a static service token into the curl client. For v0.1's
-  # smoke (anonymous curl pod GETing /api/catalog/entities), the
-  # simplest workable shape is to flip the explicit "I know what I'm
-  # doing, don't enforce" flag. Production consumers MUST NOT use
-  # this — README spells out the warning.
+  # Backstage 1.24+ requires authenticated access to backend APIs
+  # by default (signed JWT or a configured external-access method) —
+  # anonymous requests get HTTP 401 "Missing credentials." Caught CI
+  # on the first push: smoke's curl GET /api/catalog/entities
+  # returned 401.
+  #
+  # Solution: declare a `static` external-access method with a
+  # fixed token that the smoke passes as a Bearer header. This is
+  # the production-shaped way to grant a service-to-service caller
+  # access to the backend; v0.1 just hardcodes the token in the
+  # rendered manifest because the smoke has no secret-management
+  # apparatus.
+  #
+  # The other auth knob (`dangerouslyDisableDefaultAuthPolicy: true`)
+  # appeared to break backend startup on the chart's image — second
+  # CI attempt timed out waiting for the Deployment to reach
+  # Available. The static-token route is well-supported across
+  # Backstage versions, so we're picking it.
   appConfig:
     backend:
       auth:
-        dangerouslyDisableDefaultAuthPolicy: true
+        externalAccess:
+          - type: static
+            options:
+              token: smoke-fixture-token-do-not-use-in-prod-12345
+              subject: smoke-svc
 
 # ---- database ---------------------------------------------------------------
 # Enable the chart-bundled PostgreSQL subchart. The chart's auth-

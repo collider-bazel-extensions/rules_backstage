@@ -62,6 +62,21 @@ backstage:
             options:
               token: smoke-fixture-token-do-not-use-in-prod-12345
               subject: smoke-svc
+      # Backstage's `url` reader REJECTS arbitrary hosts by default —
+      # POSTing a Location of type `url` whose target host isn't on
+      # this allow-list (or covered by an `integrations.<provider>`
+      # block) yields:
+      #   "Reading from '<target>' is not allowed. You may need to
+      #    configure an integration for the target host, or add it
+      #    to the configured list of allowed hosts at
+      #    'backend.reading.allow'"
+      # The smoke fetches the catalog fixture from
+      # raw.githubusercontent.com — allow that host explicitly.
+      # Production consumers configure an `integrations.github`
+      # block with a token instead.
+      reading:
+        allow:
+          - host: raw.githubusercontent.com
     # The demo image's bundled `app-config.yaml` registers
     # `file:/examples/{entities,template/template,org}.yaml`
     # locations. THOSE FILES ARE NOT SHIPPED IN THE PUBLISHED

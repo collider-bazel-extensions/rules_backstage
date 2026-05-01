@@ -31,6 +31,9 @@ data:
             subject: smoke-svc
             token: smoke-fixture-token-do-not-use-in-prod-12345
           type: static
+      reading:
+        allow:
+        - host: raw.githubusercontent.com
     catalog:
       locations: []
 ---
@@ -149,7 +152,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: 670f0a53494f7831989ae0fbb78b6de98319ee065bf37f0e1dbe6e8173c3416f
+        checksum/app-config: cf118cf1ddd418a86ae096fa077111e63bdb9f1d5591dffc502b2b11657719d9
     spec:
       serviceAccountName: default
       volumes:

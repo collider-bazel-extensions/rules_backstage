@@ -55,7 +55,13 @@ jobs:
         run: docker version
 
       - name: bazel test //tests:smoke_test
-        run: bazel test //tests:smoke_test --test_output=streamed --test_timeout=900
+        # Bazel test_timeout has to clear: kind cluster boot (~30s)
+        # + Backstage image pull (~2-3min cold) + Postgres pull + the
+        # 900s install wait (Backstage backend startup with auth +
+        # DB migrations + plugin loading) + the smoke's own polling
+        # loop. v0.1's 900s left no headroom around the install
+        # wait; v0.2 bumps to 1500s.
+        run: bazel test //tests:smoke_test --test_output=streamed --test_timeout=1500
 
       - name: Upload test logs on failure
         if: failure()

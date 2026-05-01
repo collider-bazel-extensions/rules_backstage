@@ -20,16 +20,22 @@ _BACKSTAGE_CRD = ""  # No CRDs — Backstage doesn't ship any.
 def backstage_install(
         name,
         namespace = "backstage",
-        wait_timeout = "600s",
+        wait_timeout = "900s",
         **kwargs):
     """Apply the pinned Backstage manifest into `namespace` and block
     until the Backstage Deployment AND the chart-bundled PostgreSQL
     StatefulSet are Ready before idling.
 
-    Drops into `itest_service.exe`. Wait timeout 600s — Backstage's
-    `backstage/backstage:latest` image is ~500MB and the official
-    demo build runs `yarn build` artifacts at startup. PostgreSQL
-    pull is ~150MB. Cluster startup time dominates after the pulls.
+    Drops into `itest_service.exe`. Wait timeout **900s** (15 min) —
+    Backstage's `backstage/backstage:latest` image is ~500MB; with
+    the v0.2 `appConfig` override (static-token auth) the backend
+    startup runs config validation + DB migrations + plugin loading
+    serially. PostgreSQL image pull is ~150MB on top. Total cold-pull
+    + init can hit 8-10 minutes on a fresh CI runner; v0.1 used 600s
+    and timed out twice while attempting auth overrides — the
+    diagnostic-less timeout led us to wrongly conclude the overrides
+    were broken when the actual root cause was likely "needs more
+    time."
     """
     extra_deploys = kwargs.pop("wait_for_deployments", [])
     extra_rollouts = kwargs.pop("wait_for_rollouts", [])

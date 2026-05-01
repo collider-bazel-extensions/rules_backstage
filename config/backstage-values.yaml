@@ -26,22 +26,32 @@ backstage:
     tag: latest
     pullPolicy: IfNotPresent
 
-  # NB: no `appConfig:` override in v0.1. Backstage 1.24+ enforces
-  # service-to-service auth on backend APIs by default — anonymous
-  # GET /api/catalog/entities returns HTTP 401. Two attempts at
-  # opting out (`backend.auth.dangerouslyDisableDefaultAuthPolicy:
-  # true` and `backend.auth.externalAccess: [{type: static, ...}]`)
-  # both *broke backend startup* — the Deployment never reached
-  # Available within the wait_timeout. The chart's appConfig
-  # override mechanism plus the demo image's baked-in app-config
-  # appear not to merge cleanly for these specific keys.
+  # Backstage 1.24+ enforces service-to-service auth on backend
+  # APIs by default — anonymous GET /api/catalog/entities returns
+  # HTTP 401 "Missing credentials." v0.2 wires a `static`
+  # external-access method with a fixed token; the smoke passes
+  # `Authorization: Bearer <token>` to satisfy the check.
   #
-  # v0.1's smoke instead hits the unauthenticated readiness
-  # endpoint (`/.backstage/health/v1/readiness`) which proves the
-  # backend HTTP path is up. Authenticated catalog round-trip is
-  # deferred to v0.2 — likely needs a custom-built Backstage image
-  # with the auth config baked in, or a bigger investment in the
-  # chart's secret-management knobs.
+  # v0.1 attempted this and the install wait timed out — at the
+  # time we assumed the override was breaking backend startup,
+  # but the install_wrapper had no diagnostic dump so we couldn't
+  # see pod logs. v0.2's install_wrapper dumps `kubectl describe
+  # deploy/backstage` + `kubectl logs deploy/backstage` on wait
+  # timeout, and `wait_timeout` is bumped to 900s in defs.bzl —
+  # Backstage's startup with auth enabled may legitimately take
+  # longer than 600s on a clean runner (image pull + init +
+  # config validation + DB migrations + plugin loading).
+  #
+  # Production consumers replace this hardcoded token with a
+  # Secret-mounted value referenced via `extraEnvVarsSecrets`.
+  appConfig:
+    backend:
+      auth:
+        externalAccess:
+          - type: static
+            options:
+              token: smoke-fixture-token-do-not-use-in-prod-12345
+              subject: smoke-svc
 
 # ---- database ---------------------------------------------------------------
 # Enable the chart-bundled PostgreSQL subchart. The chart's auth-

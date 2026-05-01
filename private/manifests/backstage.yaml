@@ -16,6 +16,22 @@ data:
   password: "c21va2UtZml4dHVyZS1iYWNrc3RhZ2U="
   # We don't auto-generate LDAP password when it's not provided as we do for other passwords
 ---
+# Source: backstage/templates/app-config-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-app-config
+  namespace: "backstage"
+data:
+  app-config.yaml: |
+    backend:
+      auth:
+        externalAccess:
+        - options:
+            subject: smoke-svc
+            token: smoke-fixture-token-do-not-use-in-prod-12345
+          type: static
+---
 # Source: backstage/charts/postgresql/templates/primary/svc-headless.yaml
 apiVersion: v1
 kind: Service
@@ -131,10 +147,13 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/component: backstage
       annotations:
-        checksum/app-config: 44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a
+        checksum/app-config: 441ec86310cd809db40bd910968886ba9ca64251342947324bc5a8528476cd34
     spec:
       serviceAccountName: default
       volumes:
+        - name: backstage-app-config
+          configMap:
+            name: backstage-app-config
       
       containers:
         - name: backstage-backend
@@ -144,6 +163,8 @@ spec:
             - node
             - packages/backend
           args:
+            - "--config"
+            - "/app/app-config-from-configmap.yaml"
           readinessProbe:
             httpGet:
               path: /.backstage/health/v1/readiness
@@ -177,6 +198,10 @@ spec:
             - name: backend
               containerPort: 7007
               protocol: TCP
+          volumeMounts:
+            - name: backstage-app-config
+              mountPath: "/app/app-config-from-configmap.yaml"
+              subPath: app-config.yaml
 ---
 # Source: backstage/charts/postgresql/templates/primary/statefulset.yaml
 apiVersion: apps/v1

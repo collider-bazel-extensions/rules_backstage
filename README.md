@@ -30,6 +30,18 @@ ServiceMonitor off, NetworkPolicy off. The values file is exported
 as `@rules_backstage//config:backstage-values.yaml` for inspection
 / extension.
 
+> **v0.1 smoke depth.** Backstage 1.24+ enforces service-to-service
+> auth on backend APIs by default, and two appConfig overrides we
+> tried for opting out
+> (`backend.auth.dangerouslyDisableDefaultAuthPolicy`,
+> `backend.auth.externalAccess: [{type: static, ...}]`) both broke
+> backend startup. v0.1's smoke hits the unauthenticated readiness
+> endpoint (`/.backstage/health/v1/readiness`) instead — proves
+> Backstage backend + Postgres + Service routing, but doesn't
+> exercise the catalog API. Authenticated catalog round-trip is
+> a v0.2 candidate; likely needs a custom-built Backstage image
+> with auth config baked in.
+
 **Supported platforms (v0.1):** any platform where rules_kubectl
 runs. Validated on Linux x86\_64 in CI.
 

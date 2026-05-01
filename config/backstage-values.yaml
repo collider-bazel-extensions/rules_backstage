@@ -26,32 +26,22 @@ backstage:
     tag: latest
     pullPolicy: IfNotPresent
 
-  # Backstage 1.24+ requires authenticated access to backend APIs
-  # by default (signed JWT or a configured external-access method) —
-  # anonymous requests get HTTP 401 "Missing credentials." Caught CI
-  # on the first push: smoke's curl GET /api/catalog/entities
-  # returned 401.
+  # NB: no `appConfig:` override in v0.1. Backstage 1.24+ enforces
+  # service-to-service auth on backend APIs by default — anonymous
+  # GET /api/catalog/entities returns HTTP 401. Two attempts at
+  # opting out (`backend.auth.dangerouslyDisableDefaultAuthPolicy:
+  # true` and `backend.auth.externalAccess: [{type: static, ...}]`)
+  # both *broke backend startup* — the Deployment never reached
+  # Available within the wait_timeout. The chart's appConfig
+  # override mechanism plus the demo image's baked-in app-config
+  # appear not to merge cleanly for these specific keys.
   #
-  # Solution: declare a `static` external-access method with a
-  # fixed token that the smoke passes as a Bearer header. This is
-  # the production-shaped way to grant a service-to-service caller
-  # access to the backend; v0.1 just hardcodes the token in the
-  # rendered manifest because the smoke has no secret-management
-  # apparatus.
-  #
-  # The other auth knob (`dangerouslyDisableDefaultAuthPolicy: true`)
-  # appeared to break backend startup on the chart's image — second
-  # CI attempt timed out waiting for the Deployment to reach
-  # Available. The static-token route is well-supported across
-  # Backstage versions, so we're picking it.
-  appConfig:
-    backend:
-      auth:
-        externalAccess:
-          - type: static
-            options:
-              token: smoke-fixture-token-do-not-use-in-prod-12345
-              subject: smoke-svc
+  # v0.1's smoke instead hits the unauthenticated readiness
+  # endpoint (`/.backstage/health/v1/readiness`) which proves the
+  # backend HTTP path is up. Authenticated catalog round-trip is
+  # deferred to v0.2 — likely needs a custom-built Backstage image
+  # with the auth config baked in, or a bigger investment in the
+  # chart's secret-management knobs.
 
 # ---- database ---------------------------------------------------------------
 # Enable the chart-bundled PostgreSQL subchart. The chart's auth-
